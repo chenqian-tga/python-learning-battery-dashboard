@@ -103,3 +103,11 @@ export function transitionAlert(id: string, lifecycle: string, actorRole: string
     body: JSON.stringify({ lifecycle, actor_role: actorRole, note }),
   });
 }
+
+export function updateBatchDisposition(batchId: string, status: string, actorRole: string, note = '', affectedCells = 0) {
+  return request<{ batch_id: string; status: string; label: string; owner_role: string; updated_at: string; note: string }>(`/api/batches/${encodeURIComponent(batchId)}/disposition`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, actor_role: actorRole, note, affected_cells: affectedCells }),
+  });
+}

@@ -8,7 +8,7 @@ import { OverviewWorkspace } from '../components/operations/OverviewWorkspace';
 import { getOperationsStyles } from '../components/operations/operationsStyles';
 import { WorkspaceFrame } from '../components/operations/WorkspaceFrame';
 
-const roles: OperationalRole[] = ['operator', 'shift_lead', 'engineer'];
+const roles: OperationalRole[] = ['operator', 'shift_lead', 'engineer', 'quality_engineer'];
 const workspaces = ['overview', 'exceptions', 'diagnostics'] as const;
 
 function connectionText(connection: ReturnType<typeof useOperationsStore>['connection']) {
@@ -78,7 +78,7 @@ export function BatteryOperationsPage() {
 
       <WorkspaceFrame workspace={state.workspace} role={state.role} styles={styles}>
         {state.workspace === 'overview' && <OverviewWorkspace state={state} styles={styles} onSelectException={openException} onSelectChannel={openChannel} />}
-        {state.workspace === 'exceptions' && <ExceptionWorkspace state={state} styles={styles} onSelect={openException} onDiagnose={openChannel} onTransition={operationsActions.transitionException} />}
+        {state.workspace === 'exceptions' && <ExceptionWorkspace state={state} styles={styles} onSelect={openException} onDiagnose={openChannel} onTransition={operationsActions.transitionException} onDisposition={operationsActions.updateBatchDisposition} />}
         {state.workspace === 'diagnostics' && <DiagnosticsWorkspace state={state} styles={styles} onSelectChannel={openChannel} onSelectException={openException} />}
       </WorkspaceFrame>
     </main>

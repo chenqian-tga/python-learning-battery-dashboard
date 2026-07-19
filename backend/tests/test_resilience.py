@@ -35,8 +35,16 @@ class ResilienceTests(unittest.TestCase):
 
         self.assertEqual(payload.batch["stage"], "化成 / 老化")
         self.assertEqual(payload.equipment["id"], "FORM-08")
-        self.assertIn(payload.quality_disposition["status"], {"review", "hold"})
+        self.assertIn(payload.quality_disposition["status"], {"review", "hold", "retest", "isolate", "release"})
         self.assertGreater(payload.batch["cell_count"], 0)
+
+    def test_batch_quality_disposition_is_persisted(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repository = OperationsRepository(Path(temp_dir) / "operations.db")
+            repository.initialize()
+            result = repository.update_batch_disposition("B20260719-034", "retest", "quality_engineer", "复测充放电曲线")
+            self.assertEqual(result["label"], "待复测")
+            self.assertEqual(repository.get_batch_disposition("B20260719-034")["status"], "retest")
 
     def test_alert_lifecycle_and_audit_are_persisted(self):
         payload = {

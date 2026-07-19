@@ -16,6 +16,10 @@
 
 ![Battery Operations Exceptions](docs/screenshots/battery-operations-exceptions.png)
 
+#### 质量工程师处置
+
+![Battery Operations Quality Disposition](docs/screenshots/battery-operations-quality-disposition.png)
+
 #### 诊断与追溯
 
 ![Battery Operations Diagnostics](docs/screenshots/battery-operations-diagnostics.png)

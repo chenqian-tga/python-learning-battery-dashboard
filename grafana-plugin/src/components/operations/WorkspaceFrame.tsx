@@ -36,7 +36,7 @@ export function WorkspaceFrame({ workspace, role, styles, children }: Props) {
     <section className={styles.workspaceStage} aria-label={content.title}>
       <div className={styles.workspaceIntro}>
         <div><div className={styles.eyebrow}>{content.label}</div><h2 className={styles.workspaceTitle}>{content.title}</h2><p className={styles.workspaceDescription}>{content.description}</p></div>
-        <div className={styles.workspaceFocus}><span>当前工作模式</span><b>{role === 'operator' ? '现场操作员' : role === 'shift_lead' ? '班组长' : '工艺 / 设备工程师'}</b><small>{content.focus}</small></div>
+        <div className={styles.workspaceFocus}><span>当前工作模式</span><b>{role === 'operator' ? '现场操作员' : role === 'shift_lead' ? '班组长' : role === 'engineer' ? '工艺 / 设备工程师' : '质量工程师'}</b><small>{content.focus}</small></div>
       </div>
       <div className={styles.workspaceEnter} key={workspace}>{children}</div>
     </section>

@@ -33,6 +33,21 @@ ROLE_PERMISSIONS = {
     "engineer": {"acknowledged", "in_progress", "pending_review"},
 }
 
+BATCH_DISPOSITION_LABELS = {
+    "review": "待质量复核",
+    "hold": "暂缓放行",
+    "retest": "待复测",
+    "isolate": "批次隔离",
+    "release": "质量放行",
+}
+
+BATCH_DISPOSITION_ROLES = {
+    "operator": {"review"},
+    "shift_lead": {"review", "hold", "retest", "isolate"},
+    "engineer": {"review", "hold", "retest", "isolate"},
+    "quality_engineer": set(BATCH_DISPOSITION_LABELS),
+}
+
 
 @dataclass(frozen=True)
 class AlertTransition:
@@ -100,9 +115,39 @@ class OperationsRepository:
                     FOREIGN KEY(alert_id) REFERENCES alerts(id)
                 );
                 CREATE INDEX IF NOT EXISTS idx_operation_log_timestamp ON operation_log(timestamp DESC);
+
+                CREATE TABLE IF NOT EXISTS batch_dispositions (
+                    batch_id TEXT PRIMARY KEY,
+                    status TEXT NOT NULL,
+                    label TEXT NOT NULL,
+                    owner_role TEXT NOT NULL,
+                    affected_cells INTEGER NOT NULL DEFAULT 0,
+                    updated_at TEXT NOT NULL,
+                    note TEXT NOT NULL DEFAULT ''
+                );
                 """
             )
             self._ensure_columns(connection)
+
+    def get_batch_disposition(self, batch_id: str) -> dict[str, Any] | None:
+        with self._session() as connection:
+            row = connection.execute("SELECT status, label, owner_role, affected_cells, updated_at, note FROM batch_dispositions WHERE batch_id=?", (batch_id,)).fetchone()
+            return {**dict(row), "batch_id": batch_id} if row else None
+
+    def update_batch_disposition(self, batch_id: str, status: str, actor_role: str, note: str = "", affected_cells: int = 0) -> dict[str, Any]:
+        if status not in BATCH_DISPOSITION_LABELS:
+            raise ValueError("未知的批次质量处置状态")
+        if status not in BATCH_DISPOSITION_ROLES.get(actor_role, set()):
+            raise PermissionError("当前工作角色没有执行该质量处置动作的权限")
+        timestamp = datetime.now(timezone.utc).isoformat()
+        with self._session() as connection:
+            previous = connection.execute("SELECT status FROM batch_dispositions WHERE batch_id=?", (batch_id,)).fetchone()
+            connection.execute(
+                "INSERT INTO batch_dispositions(batch_id,status,label,owner_role,affected_cells,updated_at,note) VALUES(?,?,?,?,?,?,?) ON CONFLICT(batch_id) DO UPDATE SET status=excluded.status,label=excluded.label,owner_role=excluded.owner_role,affected_cells=excluded.affected_cells,updated_at=excluded.updated_at,note=excluded.note",
+                (batch_id, status, BATCH_DISPOSITION_LABELS[status], actor_role, affected_cells, timestamp, note),
+            )
+            self._log(connection, f"batch-{batch_id}", "operator", previous["status"] if previous else None, status, "批次质量处置已更新", note or BATCH_DISPOSITION_LABELS[status], actor_role)
+            return {"batch_id": batch_id, "status": status, "label": BATCH_DISPOSITION_LABELS[status], "owner_role": actor_role, "affected_cells": affected_cells, "updated_at": timestamp, "note": note}
 
     def record_sample(self, payload: dict[str, Any]) -> None:
         with self._session() as connection:

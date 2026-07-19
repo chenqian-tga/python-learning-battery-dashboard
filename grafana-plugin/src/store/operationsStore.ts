@@ -8,7 +8,7 @@ import {
   type Workspace,
   buildExceptions,
 } from '../domain/operations';
-import { type BackendAlert, type BackendOperation, getCurrentBatteryData, getOperationsSnapshot, transitionAlert, type BatteryPayload, type OperationsSnapshot } from '../services/batteryApi';
+import { type BackendAlert, type BackendOperation, getCurrentBatteryData, getOperationsSnapshot, transitionAlert, updateBatchDisposition, type BatteryPayload, type OperationsSnapshot } from '../services/batteryApi';
 import { createBatteryStream } from '../services/batteryStream';
 
 export type OperationsState = {
@@ -152,6 +152,16 @@ export const operationsActions = {
       addActivity(mapOperation(result.operation));
     } catch (error) {
       publish({ error: error instanceof Error ? error.message : '异常状态更新失败' });
+    }
+  },
+  async updateBatchDisposition(status: string, note: string) {
+    if (!state.payload?.batch?.id) return;
+    try {
+      const result = await updateBatchDisposition(state.payload.batch.id, status, state.role, note, state.payload.batch.cell_count);
+      publish({ payload: { ...state.payload, quality_disposition: { ...state.payload.quality_disposition, ...result } } });
+      addActivity({ kind: 'operator', title: '批次质量处置已更新', detail: `${result.label}：${note || state.payload.batch.id}` });
+    } catch (error) {
+      publish({ error: error instanceof Error ? error.message : '批次质量处置更新失败' });
     }
   },
 };

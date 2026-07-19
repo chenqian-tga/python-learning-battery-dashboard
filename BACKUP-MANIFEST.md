@@ -34,4 +34,5 @@ Actual screenshots captured from the running Grafana workbench are stored in
 
 - `battery-operations-overview.png`
 - `battery-operations-exceptions.png`
+- `battery-operations-quality-disposition.png`
 - `battery-operations-diagnostics.png`

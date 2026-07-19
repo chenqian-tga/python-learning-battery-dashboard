@@ -3,7 +3,7 @@ import type { BatteryPayload } from '../services/batteryApi';
 export type ConnectionState = 'connecting' | 'online' | 'reconnecting' | 'degraded';
 export type ConditionLevel = 'normal' | 'attention' | 'critical';
 export type Workspace = 'overview' | 'exceptions' | 'diagnostics';
-export type OperationalRole = 'operator' | 'shift_lead' | 'engineer';
+export type OperationalRole = 'operator' | 'shift_lead' | 'engineer' | 'quality_engineer';
 export type ExceptionLifecycle = 'detected' | 'acknowledged' | 'assigned' | 'in_progress' | 'pending_review' | 'closed';
 
 export type MetricKey = 'voltage' | 'current' | 'max_temp' | 'pressure' | 'soc' | 'cell_diff';
@@ -64,6 +64,7 @@ export const roleLabels: Record<OperationalRole, string> = {
   operator: '现场操作员',
   shift_lead: '班组长',
   engineer: '工艺 / 设备工程师',
+  quality_engineer: '质量工程师',
 };
 
 export const workspaceLabels: Record<Workspace, string> = {
@@ -171,3 +172,11 @@ export function metricEvidenceLabel(payload: BatteryPayload | undefined, key: Me
   if (evidence === 'simulated') return '模拟推导';
   return payload?.data_quality === 'measured' ? '实测来源未细分' : '来源未确认';
 }
+
+export const dispositionLabels: Record<string, string> = {
+  review: '待质量复核',
+  hold: '暂缓放行',
+  retest: '待复测',
+  isolate: '批次隔离',
+  release: '质量放行',
+};

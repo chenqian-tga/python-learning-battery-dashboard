@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@grafana/ui';
-import { formatTime, lifecycleLabel, metricEvidenceLabel, recommendationFor, type ExceptionLifecycle } from '../../domain/operations';
+import { dispositionLabels, formatTime, lifecycleLabel, metricEvidenceLabel, recommendationFor, type ExceptionLifecycle } from '../../domain/operations';
 import type { OperationsState } from '../../store/operationsStore';
 import type { OperationsStyles } from './operationsStyles';
 
@@ -10,6 +10,7 @@ type Props = {
   onSelect: (id: string) => void;
   onTransition: (id: string, lifecycle: ExceptionLifecycle, action: string) => void;
   onDiagnose: (channel: number) => void;
+  onDisposition: (status: string, note: string) => void;
 };
 
 const nextSteps: Record<ExceptionLifecycle, { lifecycle: ExceptionLifecycle; label: string; action: string; instruction: string } | undefined> = {
@@ -25,9 +26,10 @@ const allowedTransitions: Record<OperationsState['role'], ExceptionLifecycle[]> 
   operator: ['acknowledged', 'in_progress'],
   shift_lead: ['acknowledged', 'assigned', 'in_progress', 'pending_review', 'closed'],
   engineer: ['acknowledged', 'in_progress', 'pending_review'],
+  quality_engineer: ['acknowledged', 'in_progress', 'pending_review'],
 };
 
-export function ExceptionWorkspace({ state, styles, onSelect, onTransition, onDiagnose }: Props) {
+export function ExceptionWorkspace({ state, styles, onSelect, onTransition, onDiagnose, onDisposition }: Props) {
   const items = state.exceptions.filter((item) => item.lifecycle !== 'closed');
   const selected = items.find((item) => item.id === state.selectedExceptionId) ?? items[0];
   const nextStep = selected ? nextSteps[selected.lifecycle] : undefined;
@@ -71,6 +73,7 @@ export function ExceptionWorkspace({ state, styles, onSelect, onTransition, onDi
         <article className={styles.panel}>
           <div className={styles.panelHeader}><div><div className={styles.panelTitle}>现在要做什么</div><div className={styles.panelSub}>系统只展示当前状态下允许的一个动作，不让操作员猜流程。</div></div></div>
           {nextStep ? <div className={styles.nextAction}><div className={styles.nextActionTitle}>{nextStep.instruction}</div><div className={styles.muted}>当前状态：{lifecycleLabel(selected.lifecycle)} · 下一状态：{lifecycleLabel(nextStep.lifecycle)}</div>{allowedTransitions[state.role].includes(nextStep.lifecycle) ? <Button variant="primary" onClick={() => onTransition(selected.id, nextStep.lifecycle, nextStep.action)}>{nextStep.label}</Button> : <div className={styles.note}>当前工作模式没有执行该步骤的权限。请切换到有权限的角色后继续。</div>}</div> : <div className={styles.empty}>该异常已关闭，无需再执行操作。</div>}
+          {state.role === 'quality_engineer' && <div className={styles.actionList}><div className={styles.smallLabel}>质量处置动作</div><div className={styles.muted}>这些动作会持久化到批次记录，并写入审计日志。</div><Button variant="secondary" onClick={() => onDisposition('retest', `复测批次 ${batch?.id ?? ''}`)}>{dispositionLabels.retest}</Button><Button variant="secondary" onClick={() => onDisposition('isolate', `隔离批次 ${batch?.id ?? ''}`)}>{dispositionLabels.isolate}</Button><Button variant="primary" onClick={() => onDisposition('release', `质量放行批次 ${batch?.id ?? ''}`)}>{dispositionLabels.release}</Button></div>}
           <div className={styles.note}>每次操作都会写入服务端审计记录。系统不会因信号短暂恢复而跳过人工复核。</div>
         </article>
       </div>

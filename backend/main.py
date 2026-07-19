@@ -46,6 +46,13 @@ class AlertTransitionRequest(BaseModel):
     note: str = ""
 
 
+class BatchDispositionRequest(BaseModel):
+    status: str
+    actor_role: str
+    note: str = ""
+    affected_cells: int = 0
+
+
 collector = DataCollector()
 repository = OperationsRepository(BASE_DIR / "data" / "battery_operations.db")
 repository.initialize()
@@ -88,9 +95,12 @@ def get_current_state() -> tuple[BatteryPayload, list[dict]]:
     data = collector.collect_all()
     measured = collector.connected and all(sensor.last_read_success for sensor in collector.sensors.values())
     payload = build_battery_payload(data, collector.connected, measured)
+    saved_disposition = repository.get_batch_disposition(payload["batch"]["id"])
+    if saved_disposition:
+        payload["quality_disposition"] = {**payload["quality_disposition"], **saved_disposition}
     repository.record_sample(payload)
     alerts = repository.sync_alerts(payload)
-    if any(alert["severity"] == "critical" for alert in alerts if alert["lifecycle"] != "closed"):
+    if not saved_disposition and any(alert["severity"] == "critical" for alert in alerts if alert["lifecycle"] != "closed"):
         payload["quality_disposition"] = {
             **payload["quality_disposition"],
             "status": "hold",
@@ -134,6 +144,18 @@ async def transition_alert(alert_id: str, request: AlertTransitionRequest):
             AlertTransition(request.lifecycle, request.actor_role, request.note),
         )
         return {"alert": alert, "operation": operation}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except PermissionError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@app.post("/api/batches/{batch_id}/disposition")
+async def update_batch_disposition(batch_id: str, request: BatchDispositionRequest):
+    try:
+        return repository.update_batch_disposition(batch_id, request.status, request.actor_role, request.note, request.affected_cells)
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except PermissionError as error:
