@@ -5,10 +5,19 @@ def _clamp(value: float, min_value: float, max_value: float) -> float:
     return max(min_value, min(max_value, value))
 
 
-def build_battery_payload(data: dict, connected: bool) -> dict:
-    temp = float(data["温度传感器-A1"]["current"]["value"])
-    humidity = float(data["湿度传感器-A1"]["current"]["value"])
-    pressure = float(data["压力传感器-B1"]["current"]["value"])
+def _coerce_float(value, fallback: float) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return fallback
+
+
+def build_battery_payload(data: dict, connected: bool, measured: bool | None = None) -> dict:
+    if measured is None:
+        measured = connected
+    temp = _coerce_float(data["温度传感器-A1"]["current"]["value"], 24.0)
+    humidity = _coerce_float(data["湿度传感器-A1"]["current"]["value"], 55.0)
+    pressure = _coerce_float(data["压力传感器-B1"]["current"]["value"], 1.0)
 
     voltage = round(_clamp(48.2 + (pressure - 1.0) * 6.4 + (humidity - 55.0) * 0.05, 43.5, 57.8), 2)
     current = round(_clamp(10.0 + (temp - 24.0) * 1.1 + (humidity - 55.0) * 0.18, -18.0, 42.0), 2)
@@ -16,6 +25,18 @@ def build_battery_payload(data: dict, connected: bool) -> dict:
     max_temp = round(_clamp(temp + max(0.0, humidity - 55.0) * 0.04, 22.0, 68.0), 1)
     soc = round(_clamp(67.0 + (humidity - 55.0) * 1.2 - abs(current - 10.0) * 0.55, 8.0, 99.0), 1)
 
+    quality = "derived" if measured else "stale" if connected else "simulated"
+    source = "modbus" if measured else "modbus_cache" if connected else "simulator"
+    provenance = {
+        "temperature": "measured" if measured else quality,
+        "pressure": "measured" if measured else quality,
+        "voltage": quality,
+        "current": quality,
+        "soc": quality,
+        "cell_diff": quality,
+        "max_temp": quality,
+    }
+    batch_id = f"B{datetime.now().strftime('%Y%m%d')}-034"
     return {
         "voltage": voltage,
         "current": current,
@@ -25,5 +46,35 @@ def build_battery_payload(data: dict, connected: bool) -> dict:
         "cell_diff": cell_diff,
         "max_temp": max_temp,
         "connection_status": "connected" if connected else "fallback",
+        "data_source": source,
+        "data_quality": quality,
+        "measurement_scope": "aggregate",
+        "channel_data_available": False,
+        "metric_provenance": provenance,
+        "measurement_note": "总电压、总电流、SOC、单体压差和最高温度为规则推导的聚合指标，不是直接单体寄存器读数。" if measured else "当前不是完整实测链路；页面中的聚合指标不代表真实单体通道。",
+        "batch": {
+            "id": batch_id,
+            "recipe": "NCM-Formation-03",
+            "stage": "化成 / 老化",
+            "cell_count": 96,
+            "started_at": datetime.now().replace(hour=8, minute=10, second=0, microsecond=0).isoformat(timespec="seconds"),
+        },
+        "equipment": {
+            "id": "FORM-08",
+            "line": "LINE-02",
+            "station": "ST-12",
+        },
+        "quality_disposition": {
+            "status": "review",
+            "label": "待质量复核",
+            "owner_role": "quality_engineer",
+            "affected_cells": 96,
+        },
+        "production_kpis": {
+            "active_batches": 128,
+            "review_batches": 6,
+            "hold_batches": 2,
+            "equipment_exceptions": 3,
+        },
         "timestamp": datetime.now().isoformat(timespec="seconds"),
     }

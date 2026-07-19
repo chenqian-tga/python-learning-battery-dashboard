@@ -18,6 +18,7 @@ class SensorSimulator:
         self.modbus_address = modbus_address
         self.scale_factor = scale_factor
         self.current_value = config["initial"]
+        self.last_read_success = False
         self.history = deque(maxlen=MAX_HISTORY)
         self.history.append({"timestamp": time.strftime("%H:%M:%S"), "value": self.current_value})
 
@@ -31,8 +32,11 @@ class SensorSimulator:
             if not result.isError():
                 raw_value = result.registers[0]
                 self.current_value = raw_value / self.scale_factor
+                self.last_read_success = True
+            else:
+                self.last_read_success = False
         except Exception:
-            pass
+            self.last_read_success = False
 
         record = {"timestamp": time.strftime("%H:%M:%S"), "value": round(self.current_value, 2)}
         self.history.append(record)
@@ -50,7 +54,8 @@ class SensorSimulator:
 
 class DataCollector:
     def __init__(self):
-        self.client = ModbusTcpClient("localhost", port=5020)
+        # A disconnected field device must not stall the dashboard request path.
+        self.client = ModbusTcpClient("localhost", port=5020, timeout=0.5, retries=0)
         self.connected = self.client.connect()
 
         self.sensors = {
@@ -75,6 +80,8 @@ class DataCollector:
         }
 
     def collect_all(self):
+        if not self.connected:
+            self.connected = self.client.connect()
         if not self.connected:
             return self._fallback_random()
 
