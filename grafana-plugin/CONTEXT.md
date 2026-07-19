@@ -49,3 +49,19 @@ _Avoid_: if statement, card color
 **Audit Record**:
 An immutable record of a user or system action, including actor, time, target, previous state, and outcome.
 _Avoid_: activity text
+
+**Production Batch**:
+A bounded group of cells processed under one recipe and production run. Quality disposition applies to the batch before release, hold, re-test, or isolation.
+_Avoid_: battery pack
+
+**Formation Recipe**:
+The configured charge, discharge, timing, and environmental procedure used to process a production batch.
+_Avoid_: threshold set
+
+**Quality Disposition**:
+The current release decision for a batch: review, hold, re-test, isolate, or release. It is a quality decision, not a live sensor status.
+_Avoid_: healthy / unhealthy
+
+**Equipment Context**:
+The production line, formation cabinet, and station that processed a batch and may explain a deviation.
+_Avoid_: dashboard scope

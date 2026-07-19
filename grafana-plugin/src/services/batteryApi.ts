@@ -13,6 +13,30 @@ export type BatteryPayload = {
   channel_data_available: boolean;
   metric_provenance?: Record<string, 'measured' | 'derived' | 'stale' | 'simulated' | string>;
   measurement_note?: string;
+  batch: {
+    id: string;
+    recipe: string;
+    stage: string;
+    cell_count: number;
+    started_at: string;
+  };
+  equipment: {
+    id: string;
+    line: string;
+    station: string;
+  };
+  quality_disposition: {
+    status: 'release' | 'review' | 'hold' | string;
+    label: string;
+    owner_role?: string;
+    affected_cells?: number;
+  };
+  production_kpis: {
+    active_batches: number;
+    review_batches: number;
+    hold_batches: number;
+    equipment_exceptions: number;
+  };
   timestamp: string;
 };
 

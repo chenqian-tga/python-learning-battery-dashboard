@@ -33,6 +33,10 @@ class BatteryPayload(BaseModel):
     channel_data_available: bool
     metric_provenance: dict[str, str] = Field(default_factory=dict)
     measurement_note: str = ""
+    batch: dict[str, object] = Field(default_factory=dict)
+    equipment: dict[str, object] = Field(default_factory=dict)
+    quality_disposition: dict[str, object] = Field(default_factory=dict)
+    production_kpis: dict[str, int] = Field(default_factory=dict)
     timestamp: str
 
 
@@ -86,6 +90,13 @@ def get_current_state() -> tuple[BatteryPayload, list[dict]]:
     payload = build_battery_payload(data, collector.connected, measured)
     repository.record_sample(payload)
     alerts = repository.sync_alerts(payload)
+    if any(alert["severity"] == "critical" for alert in alerts if alert["lifecycle"] != "closed"):
+        payload["quality_disposition"] = {
+            **payload["quality_disposition"],
+            "status": "hold",
+            "label": "暂缓放行",
+            "owner_role": "quality_engineer",
+        }
     return BatteryPayload(**payload), alerts
 
 

@@ -13,19 +13,19 @@ const copy: Record<Workspace, { label: string; title: string; description: strin
   overview: {
     label: 'SHIFT SITUATION',
     title: '本班态势',
-    description: '用最少的状态判断当前范围是否需要介入，再进入具体异常。',
-    focus: '优先看待处理异常与通道健康',
+    description: '先判断哪些批次不能直接放行，再进入具体质量异常。',
+    focus: '优先看暂缓放行与待质量复核批次',
   },
   exceptions: {
     label: 'EXCEPTION WORKBENCH',
     title: '异常处置',
-    description: '围绕一项异常完成确认、归属、处理和复核，不在总览里完成操作。',
-    focus: '优先完成当前队列中的下一步',
+    description: '围绕一个批次质量任务完成确认、分流、复测和放行判定。',
+    focus: '优先完成当前批次的下一步',
   },
   diagnostics: {
     label: 'DIAGNOSTIC EVIDENCE',
     title: '诊断与追溯',
-    description: '在选定范围内查看趋势、阈值与关联通道，为处置提供证据。',
+    description: '对比配方、设备和批次趋势，为复测或隔离提供证据。',
     focus: '当前证据覆盖最近持久化样本',
   },
 };

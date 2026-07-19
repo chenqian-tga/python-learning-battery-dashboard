@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@grafana/ui';
-import { buildChannels, dataQualityLabel, dataSourceLabel, formatTime, lifecycleLabel, type OperationsException } from '../../domain/operations';
+import { dataQualityLabel, dataSourceLabel, formatTime, lifecycleLabel, type OperationsException } from '../../domain/operations';
 import type { OperationsState } from '../../store/operationsStore';
 import type { OperationsStyles } from './operationsStyles';
 
@@ -28,46 +28,45 @@ function ExceptionRow({ exceptionItem, styles, onClick }: { exceptionItem: Opera
 }
 
 export function OverviewWorkspace({ state, styles, onSelectChannel, onSelectException }: Props) {
-  const channels = buildChannels(state.payload);
   const affected = state.exceptions.filter((item) => item.lifecycle !== 'closed');
-  const health = channels.filter((channel) => channel.level === 'normal').length;
   const priority = affected[0];
+  const batch = state.payload?.batch;
+  const equipment = state.payload?.equipment;
+  const kpis = state.payload?.production_kpis;
 
   return (
     <section className={styles.content} aria-label="本班总览">
       {priority ? (
         <div className={styles.priority}>
           <div>
-            <div className={`${styles.priorityTitle} ${styles[priority.severity]}`}>需要处置：{priority.title} {priority.value.toFixed(priority.metric === 'pressure' ? 3 : 1)} {priority.unit}</div>
-            <div className={styles.priorityDetail}>{priority.scope} · 超出关注阈值 · 首次发现 {formatTime(priority.firstSeen)}</div>
+            <div className={`${styles.priorityTitle} ${styles[priority.severity]}`}>批次需要判断：{batch?.id ?? '当前批次'} · {priority.title}</div>
+            <div className={styles.priorityDetail}>{batch?.recipe} · {equipment?.id} / {equipment?.station} · 当前状态 {state.payload?.quality_disposition.label ?? '待质量复核'}</div>
           </div>
           <Button variant="secondary" icon="arrow-right" onClick={() => onSelectException(priority.id)}>进入处置</Button>
         </div>
       ) : (
         <div className={styles.priority}>
-          <div><div className={`${styles.priorityTitle} ${styles.normal}`}>当前没有需要人工确认的异常</div><div className={styles.priorityDetail}>持续保留数据链路与通道健康的实时监测。</div></div>
+          <div><div className={`${styles.priorityTitle} ${styles.normal}`}>当前没有待处理批次异常</div><div className={styles.priorityDetail}>持续接收化成和老化过程数据，异常出现后自动进入质量队列。</div></div>
         </div>
       )}
 
       <div className={styles.grid4}>
-        <article className={styles.statistic}><div className={styles.statLabel}>本班待处理</div><div className={styles.statValue}>{affected.length} 项</div><div className={styles.statDetail}>{affected.filter((item) => item.severity === 'critical').length} 项严重 · 按风险排序</div></article>
-        <article className={styles.statistic}><div className={styles.statLabel}>通道视图</div><div className={styles.statValue}>{state.payload?.channel_data_available ? `${health} / ${channels.length}` : '估算'}</div><div className={styles.statDetail}>{state.payload?.channel_data_available ? '真实通道数据' : '后端只有聚合数据，不能代表单体健康'}</div></article>
+        <article className={styles.statistic}><div className={styles.statLabel}>待质量复核</div><div className={styles.statValue}>{kpis?.review_batches ?? affected.length} 批</div><div className={styles.statDetail}>异常批次需要质量工程师判断</div></article>
+        <article className={styles.statistic}><div className={styles.statLabel}>暂缓放行</div><div className={`${styles.statValue} ${styles.critical}`}>{kpis?.hold_batches ?? (state.payload?.quality_disposition.status === 'hold' ? 1 : 0)} 批</div><div className={styles.statDetail}>需完成复测或隔离结论</div></article>
         <article className={styles.statistic}><div className={styles.statLabel}>数据来源</div><div className={`${styles.statValue} ${state.payload?.data_quality === 'measured' ? styles.normal : styles.attention}`}>{dataSourceLabel(state.payload)}</div><div className={styles.statDetail}>{connectionLabel(state.connection)} · {dataQualityLabel(state.payload)}</div></article>
-        <article className={styles.statistic}><div className={styles.statLabel}>当前范围</div><div className={styles.statValue}>机架 A</div><div className={styles.statDetail}>{state.payload?.channel_data_available ? '电池包 A · 化成区 · 16 个真实通道' : '电池包 A · 化成区 · 当前仅有聚合数据'}</div></article>
+        <article className={styles.statistic}><div className={styles.statLabel}>当前批次</div><div className={styles.statValue}>{batch?.id ?? '--'}</div><div className={styles.statDetail}>{batch?.cell_count ?? '--'} 个电芯 · {batch?.stage ?? '化成 / 老化'}</div></article>
       </div>
 
       <div className={styles.split}>
         <article className={styles.panel}>
-          <div className={styles.panelHeader}><div><div className={styles.panelTitle}>{state.payload?.channel_data_available ? '通道健康矩阵' : '通道数据待接入'}</div><div className={styles.panelSub}>{state.payload?.channel_data_available ? '正常状态降噪；选择通道后进入诊断证据页。' : '当前后端没有单体通道寄存器，以下位号仅作为布局占位，不显示推导数值。'}</div></div><span className={`${styles.status} ${state.payload?.channel_data_available ? styles.normal : styles.attention}`}>{state.payload?.channel_data_available ? '真实通道' : '未接入'}</span></div>
-          <div className={styles.heatGrid}>
-            {channels.map((channel) => (
-              <button key={channel.id} disabled={channel.estimated} title={channel.estimated ? '暂无真实通道数据，不能进入单体诊断' : undefined} className={`${styles.channel} ${styles[channel.estimated ? 'attention' : channel.level]} ${state.selectedChannel === channel.index ? styles.channelSelected : ''}`} onClick={() => onSelectChannel(channel.index)}>
-                <span className={styles.channelTop}><span>{channel.id}</span><span>{channel.estimated ? '未接入' : channel.level === 'normal' ? '正常' : channel.level === 'attention' ? '关注' : '严重'}</span></span>
-                <strong className={styles.channelValue}>{channel.estimated ? '暂无数据' : `${channel.voltage.toFixed(2)} V`}</strong>
-                <span className={styles.channelMeta}>{channel.estimated ? '不可作为单体证据' : `${channel.temperature.toFixed(1)} C`}</span>
-              </button>
-            ))}
+          <div className={styles.panelHeader}><div><div className={styles.panelTitle}>当前生产范围</div><div className={styles.panelSub}>把异常放回批次、配方和设备上下文，不要求操作员逐个盯单体通道。</div></div><span className={`${styles.status} ${styles.attention}`}>{state.payload?.quality_disposition.label ?? '待质量复核'}</span></div>
+          <div className={styles.facts}>
+            <div className={styles.fact}><div className={styles.smallLabel}>批次</div><div className={styles.smallValue}>{batch?.id ?? '--'}</div></div>
+            <div className={styles.fact}><div className={styles.smallLabel}>配方</div><div className={styles.smallValue}>{batch?.recipe ?? '--'}</div></div>
+            <div className={styles.fact}><div className={styles.smallLabel}>设备 / 工位</div><div className={styles.smallValue}>{equipment ? `${equipment.id} / ${equipment.station}` : '--'}</div></div>
+            <div className={styles.fact}><div className={styles.smallLabel}>影响范围</div><div className={styles.smallValue}>{state.payload?.quality_disposition.affected_cells ?? batch?.cell_count ?? '--'} 个电芯</div></div>
           </div>
+          <div className={styles.note}>当前仍是模拟聚合数据，不能证明单个电芯已经损坏；它只用于演示批次异常进入质量复核和放行决策的流程。</div>
         </article>
 
         <article className={styles.panel}>
@@ -75,7 +74,7 @@ export function OverviewWorkspace({ state, styles, onSelectChannel, onSelectExce
           <div className={styles.list}>
             {affected.length ? affected.map((item) => <ExceptionRow key={item.id} exceptionItem={item} styles={styles} onClick={() => onSelectException(item.id)} />) : <div className={styles.empty}>当前范围内没有活跃异常。</div>}
           </div>
-          <div className={styles.note}>异常由后端策略统一计算，并保留状态、责任角色与操作审计。当前页面的异常是聚合指标异常，不等同于某个单体通道已经确认损坏。</div>
+          <div className={styles.note}>异常由后端策略统一计算，并保留批次范围、状态、责任角色与操作审计。</div>
         </article>
       </div>
 

@@ -31,6 +31,8 @@ export function ExceptionWorkspace({ state, styles, onSelect, onTransition, onDi
   const items = state.exceptions.filter((item) => item.lifecycle !== 'closed');
   const selected = items.find((item) => item.id === state.selectedExceptionId) ?? items[0];
   const nextStep = selected ? nextSteps[selected.lifecycle] : undefined;
+  const batch = state.payload?.batch;
+  const equipment = state.payload?.equipment;
 
   if (!selected) {
     return <section className={styles.content} aria-label="异常处置"><article className={styles.panel}><div className={styles.panelTitle}>异常处置</div><div className={styles.empty}>当前没有活跃异常。该工作台会在策略发现需要人工判断的情况时自动加入队列。</div></article></section>;
@@ -39,7 +41,7 @@ export function ExceptionWorkspace({ state, styles, onSelect, onTransition, onDi
   return (
     <section className={styles.content} aria-label="异常处置">
       <div className={styles.priority}>
-        <div><div className={`${styles.priorityTitle} ${styles[selected.severity]}`}>{selected.severity === 'critical' ? '严重异常' : '需要关注'}：{selected.title}</div><div className={styles.priorityDetail}>先确认范围和证据，再执行下一步。异常状态由后端策略和审计记录维护。</div></div>
+        <div><div className={`${styles.priorityTitle} ${styles[selected.severity]}`}>{selected.severity === 'critical' ? '暂缓放行' : '需要质量复核'}：{batch?.id ?? '当前批次'}</div><div className={styles.priorityDetail}>{batch?.recipe} · {equipment?.id} / {equipment?.station} · 先确认范围和证据，再执行下一步。</div></div>
         <span className={`${styles.status} ${styles[selected.severity]}`}>{lifecycleLabel(selected.lifecycle)}</span>
       </div>
 
@@ -52,16 +54,18 @@ export function ExceptionWorkspace({ state, styles, onSelect, onTransition, onDi
         </article>
 
         <article className={styles.panel}>
-          <div className={styles.panelHeader}><div><div className={styles.panelTitle}>{selected.title}</div><div className={styles.panelSub}>{selected.scope} · {selected.relatedChannel ? `关联 CH${String(selected.relatedChannel).padStart(2, '0')}` : '聚合指标，无单体通道关联'}</div></div><span className={`${styles.status} ${styles[selected.severity]}`}>{selected.value.toFixed(selected.metric === 'pressure' ? 3 : 1)} {selected.unit}</span></div>
+          <div className={styles.panelHeader}><div><div className={styles.panelTitle}>{selected.title}</div><div className={styles.panelSub}>{batch?.id} · {batch?.recipe} · {equipment?.id} / {equipment?.station}</div></div><span className={`${styles.status} ${styles[selected.severity]}`}>{selected.value.toFixed(selected.metric === 'pressure' ? 3 : 1)} {selected.unit}</span></div>
           <div className={styles.facts}>
             <div className={styles.fact}><div className={styles.smallLabel}>证据等级</div><div className={styles.smallValue}>{selected.evidenceType === 'measured' ? '原始实测' : selected.evidenceType === 'derived' ? '计算推导' : selected.evidenceType === 'stale' ? '缓存推导' : selected.evidenceType === 'simulated' ? '模拟推导' : metricEvidenceLabel(state.payload, selected.metric)}</div></div>
             <div className={styles.fact}><div className={styles.smallLabel}>策略阈值</div><div className={styles.smallValue}>{selected.threshold[0]} / {selected.threshold[1]} {selected.unit}</div></div>
             <div className={styles.fact}><div className={styles.smallLabel}>首次发现</div><div className={styles.smallValue}>{formatTime(selected.firstSeen)}</div></div>
             <div className={styles.fact}><div className={styles.smallLabel}>最近刷新</div><div className={styles.smallValue}>{formatTime(selected.latestSeen)}</div></div>
             <div className={styles.fact}><div className={styles.smallLabel}>当前状态</div><div className={styles.smallValue}>{lifecycleLabel(selected.lifecycle)}</div></div>
+            <div className={styles.fact}><div className={styles.smallLabel}>质量处置</div><div className={styles.smallValue}>{state.payload?.quality_disposition.label ?? '待质量复核'}</div></div>
+            <div className={styles.fact}><div className={styles.smallLabel}>影响范围</div><div className={styles.smallValue}>{state.payload?.quality_disposition.affected_cells ?? batch?.cell_count ?? '--'} 个电芯</div></div>
           </div>
           <div className={styles.note}>{recommendationFor(selected)}</div>
-          <div style={{ marginTop: 16 }}><Button variant="secondary" onClick={() => onDiagnose(selected.relatedChannel ?? 0)}>查看{state.payload?.channel_data_available ? '诊断' : '聚合'}证据</Button></div>
+          <div style={{ marginTop: 16 }}><Button variant="secondary" onClick={() => onDiagnose(selected.relatedChannel ?? 0)}>查看批次证据</Button></div>
         </article>
 
         <article className={styles.panel}>

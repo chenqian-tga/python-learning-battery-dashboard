@@ -10,12 +10,12 @@ from typing import Any, Iterator
 
 
 POLICIES = {
-    "voltage": ("总电压", "V", 52.0, 55.0, "机架 A / 电池包 A", 0),
-    "current": ("总电流", "A", 30.0, 40.0, "机架 A / 电池包 A", 0),
-    "max_temp": ("最高温度", "C", 45.0, 60.0, "机架 A / 电池包 A", 0),
-    "pressure": ("化成压力", "MPa", 0.5, 0.8, "化成区", 0),
-    "soc": ("荷电状态", "%", 95.0, 98.0, "机架 A / 电池包 A", 0),
-    "cell_diff": ("单体压差", "mV", 50.0, 80.0, "机架 A / 电池包 A", 0),
+    "voltage": ("充电阶段电压偏离", "V", 52.0, 55.0, "化成批次", 0),
+    "current": ("电流配方偏离", "A", 30.0, 40.0, "化成批次", 0),
+    "max_temp": ("温升速率偏离", "C", 45.0, 60.0, "化成柜 FORM-08", 0),
+    "pressure": ("化成柜环境压力偏离", "MPa", 0.5, 0.8, "化成柜 FORM-08", 0),
+    "soc": ("老化后容量表现偏离", "%", 95.0, 98.0, "老化批次", 0),
+    "cell_diff": ("化成曲线一致性偏离", "mV", 50.0, 80.0, "化成批次", 0),
 }
 
 LIFECYCLE_TRANSITIONS = {
@@ -139,14 +139,14 @@ class OperationsRepository:
                         self._log(connection, alert_id, "system", None, "detected", "策略检测到新的异常", f"{title} 超出阈值")
                     elif row["lifecycle"] == "closed":
                         connection.execute(
-                            "UPDATE alerts SET severity=?, lifecycle='detected', value=?, latest_seen=?, first_seen=?, owner_role=NULL, evidence_type=? WHERE id=?",
-                            (severity, value, timestamp, timestamp, payload.get("metric_provenance", {}).get(metric, payload.get("data_quality", "unknown")), row["id"]),
+                            "UPDATE alerts SET title=?, severity=?, lifecycle='detected', value=?, latest_seen=?, first_seen=?, scope=?, owner_role=NULL, related_channel=0, evidence_type=? WHERE id=?",
+                            (title, severity, value, timestamp, timestamp, scope, payload.get("metric_provenance", {}).get(metric, payload.get("data_quality", "unknown")), row["id"]),
                         )
                         self._log(connection, row["id"], "system", "closed", "detected", "异常重新出现", f"{title} 再次超出阈值")
                     else:
                         connection.execute(
-                            "UPDATE alerts SET severity=?, value=?, latest_seen=?, related_channel=?, evidence_type=? WHERE id=?",
-                            (severity, value, timestamp, 0, payload.get("metric_provenance", {}).get(metric, payload.get("data_quality", "unknown")), row["id"]),
+                            "UPDATE alerts SET title=?, severity=?, value=?, latest_seen=?, scope=?, related_channel=?, evidence_type=? WHERE id=?",
+                            (title, severity, value, timestamp, scope, 0, payload.get("metric_provenance", {}).get(metric, payload.get("data_quality", "unknown")), row["id"]),
                         )
                 elif row is not None and row["lifecycle"] not in {"closed", "pending_review"}:
                     next_lifecycle = "closed" if row["lifecycle"] == "detected" else "pending_review"
@@ -154,6 +154,9 @@ class OperationsRepository:
                     detail = f"{title} 已回到策略阈值内"
                     connection.execute("UPDATE alerts SET lifecycle=?, latest_seen=? WHERE id=?", (next_lifecycle, timestamp, row["id"]))
                     self._log(connection, row["id"], "system", row["lifecycle"], next_lifecycle, action, detail)
+            for metric, policy in POLICIES.items():
+                title, _, _, _, scope, _ = policy
+                connection.execute("UPDATE alerts SET title=?, scope=?, related_channel=0 WHERE metric=? AND source='backend_policy'", (title, scope, metric))
             return self.list_alerts(connection=connection)
 
     def list_alerts(self, active_only: bool = False, connection: sqlite3.Connection | None = None) -> list[dict[str, Any]]:

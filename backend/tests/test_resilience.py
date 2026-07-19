@@ -30,6 +30,14 @@ class FakeDisconnectedClient:
 
 
 class ResilienceTests(unittest.TestCase):
+    def test_payload_contains_batch_quality_context(self):
+        payload = main.get_current_payload()
+
+        self.assertEqual(payload.batch["stage"], "化成 / 老化")
+        self.assertEqual(payload.equipment["id"], "FORM-08")
+        self.assertIn(payload.quality_disposition["status"], {"review", "hold"})
+        self.assertGreater(payload.batch["cell_count"], 0)
+
     def test_alert_lifecycle_and_audit_are_persisted(self):
         payload = {
             "voltage": 43.5,

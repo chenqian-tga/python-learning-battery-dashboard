@@ -40,6 +40,7 @@ export type OperationsException = {
   latestSeen: string;
   source: 'client_policy' | 'backend_policy';
   evidenceType?: 'measured' | 'derived' | 'stale' | 'simulated' | string;
+  disposition?: 'review' | 'hold' | 'release' | string;
 };
 
 export type ActivityEntry = {
@@ -141,10 +142,10 @@ export function lifecycleLabel(value: ExceptionLifecycle) {
 
 export function recommendationFor(exception?: OperationsException) {
   if (!exception) return '选择一项异常后，系统会展示阈值、证据窗口与建议动作。';
-  if (exception.metric === 'pressure') return '复核压力采样、夹具密封与化成工位状态，再决定是否升级处置。';
-  if (exception.metric === 'cell_diff') return '比较相邻通道的一致性，并检查均衡状态与连接阻抗。';
-  if (exception.metric === 'max_temp') return '优先核查温控回路、环境温度与相关通道的温升速度。';
-  return '复核最近采样、阈值配置和关联通道，再决定是否创建现场任务。';
+  if (exception.metric === 'pressure') return '核查化成柜环境与工位状态，确认是否需要暂缓当前批次放行。';
+  if (exception.metric === 'cell_diff') return '对比同配方正常批次曲线，决定复测、隔离或提交质量判定。';
+  if (exception.metric === 'max_temp') return '先排查 FORM-08 设备侧原因，再判断是否扩大批次影响范围。';
+  return '复核配方阶段、设备范围和同批次证据，再决定复测、隔离或放行。';
 }
 
 export function dataSourceLabel(payload?: BatteryPayload) {
