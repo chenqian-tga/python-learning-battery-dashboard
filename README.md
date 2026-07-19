@@ -1,5 +1,27 @@
 # Battery Dashboard Migration
 
+## Battery Operations Workbench
+
+当前 Grafana 二次开发成果是一个电池运行与异常处置工作台，包含本班总览、异常处置、诊断与追溯三个工作区。
+
+运行地址：<http://127.0.0.1:3001/a/chenq-batteryops-app/operations>
+
+### Demo Screenshots
+
+#### 本班总览
+
+![Battery Operations Overview](docs/screenshots/battery-operations-overview.png)
+
+#### 异常处置
+
+![Battery Operations Exceptions](docs/screenshots/battery-operations-exceptions.png)
+
+#### 诊断与追溯
+
+![Battery Operations Diagnostics](docs/screenshots/battery-operations-diagnostics.png)
+
+完整备份范围和数据边界说明见 [BACKUP-MANIFEST.md](BACKUP-MANIFEST.md)。
+
 This workspace now uses a split architecture:
 
 - [frontend](C:/Users/chenq/Desktop/python学习/frontend): Next.js frontend
