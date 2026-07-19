@@ -23,3 +23,15 @@ The backend currently uses simulator/fallback data when a complete Modbus path i
 The current Grafana workbench is served at:
 
 `http://127.0.0.1:3001/a/chenq-batteryops-app/operations`
+
+## Demo Media
+
+The repository includes the existing battery workshop image at
+`frontend/public/showcase/battery-energy-storage-workshop.jpg`.
+
+Actual screenshots captured from the running Grafana workbench are stored in
+`docs/screenshots/`:
+
+- `battery-operations-overview.png`
+- `battery-operations-exceptions.png`
+- `battery-operations-diagnostics.png`
