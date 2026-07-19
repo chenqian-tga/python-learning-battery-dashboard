@@ -29,4 +29,9 @@ The current Grafana workbench is served at:
 The repository includes the existing battery workshop image at
 `frontend/public/showcase/battery-energy-storage-workshop.jpg`.
 
-An actual browser screenshot of the Grafana workbench is not included in this snapshot because the local Chrome/Playwright screenshot runtime was unavailable during backup. Do not treat the workshop image as a UI screenshot.
+Actual screenshots captured from the running Grafana workbench are stored in
+`docs/screenshots/`:
+
+- `battery-operations-overview.png`
+- `battery-operations-exceptions.png`
+- `battery-operations-diagnostics.png`
