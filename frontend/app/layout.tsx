@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Battery Dashboard Frontend",
-  description: "Phase 1 Next.js frontend scaffold for battery monitoring.",
+  title: "2.5D Portfolio Landing",
+  description: "A layered 2.5D landing page inspired by the provided poster-like reference.",
 };
 
 export default function RootLayout({
