@@ -1,0 +1,33 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
+  "type": "app",
+  "name": "Battery Operations",
+  "id": "chenq-batteryops-app",
+  "info": {
+    "keywords": ["battery", "industrial", "operations"],
+    "description": "Operational battery monitoring for industrial data systems.",
+    "author": {
+      "name": "Chenq"
+    },
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "screenshots": [],
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "includes": [
+    {
+      "type": "page",
+      "name": "Battery Operations",
+      "path": "/a/%PLUGIN_ID%/operations",
+      "addToNav": true,
+      "defaultNav": true
+    }
+  ],
+  "dependencies": {
+    "grafanaDependency": ">=12.3.0",
+    "plugins": []
+  }
+}
