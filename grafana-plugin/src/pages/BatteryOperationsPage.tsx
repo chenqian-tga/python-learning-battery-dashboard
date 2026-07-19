@@ -33,6 +33,45 @@ export function BatteryOperationsPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const body = document.body;
+    const style = document.createElement('style');
+    style.dataset.batteryopsShell = 'true';
+    style.textContent = `
+      body.batteryops-immersive .top-nav,
+      body.batteryops-immersive .navbar,
+      body.batteryops-immersive .sidemenu,
+      body.batteryops-immersive .sidebar,
+      body.batteryops-immersive [class*="top-nav"],
+      body.batteryops-immersive [class*="sidemenu"],
+      body.batteryops-immersive [class*="side-menu"] {
+        display: none !important;
+      }
+      body.batteryops-immersive .main-view--chrome-hidden,
+      body.batteryops-immersive .page-container,
+      body.batteryops-immersive .page-wrapper,
+      body.batteryops-immersive .main-view,
+      body.batteryops-immersive #page-wrapper {
+        margin: 0 !important;
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+        padding-top: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+      }
+      body.batteryops-immersive .page-container {
+        min-height: 100vh !important;
+      }
+    `;
+    body.classList.add('batteryops-immersive');
+    document.head.appendChild(style);
+    return () => {
+      body.classList.remove('batteryops-immersive');
+      style.remove();
+    };
+  }, []);
+
   const openException = useCallback((id: string) => startTransition(() => operationsActions.selectException(id)), []);
   const openChannel = useCallback((channel: number) => startTransition(() => operationsActions.selectChannel(channel)), []);
   const selectWorkspace = useCallback((workspace: (typeof workspaces)[number]) => startTransition(() => operationsActions.selectWorkspace(workspace)), []);

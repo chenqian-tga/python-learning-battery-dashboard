@@ -4,7 +4,9 @@
 
 当前 Grafana 二次开发成果是一个电池运行与异常处置工作台，包含本班总览、异常处置、诊断与追溯三个工作区。
 
-运行地址：<http://127.0.0.1:3001/a/chenq-batteryops-app/operations>
+员工运行入口：<http://127.0.0.1:3001/a/chenq-batteryops-app/operations?kiosk>
+
+该入口使用 Grafana 的 kiosk 模式，隐藏 Grafana 顶栏和侧栏，员工直接进入电池业务工作台。运维管理仍可使用不带 `kiosk` 的地址：<http://127.0.0.1:3001/a/chenq-batteryops-app/operations>
 
 ### Demo Screenshots
 

@@ -24,6 +24,10 @@ The current Grafana workbench is served at:
 
 `http://127.0.0.1:3001/a/chenq-batteryops-app/operations`
 
+员工入口使用 Grafana kiosk 模式：
+
+`http://127.0.0.1:3001/a/chenq-batteryops-app/operations?kiosk`
+
 ## Demo Media
 
 The repository includes the existing battery workshop image at
